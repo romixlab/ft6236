@@ -1,6 +1,6 @@
 #![no_std]
 
-use embedded_hal_1::{delay::DelayUs, digital::OutputPin, i2c::I2c};
+use embedded_hal::{blocking::delay::DelayMs, digital::v2::OutputPin, blocking::i2c::{WriteRead, SevenBitAddress}};
 
 pub const DEFAULT_ADDR: u8 = 0x38;
 
@@ -98,7 +98,7 @@ pub struct FT6236<I2C> {
 
 impl<I2C> FT6236<I2C>
 where
-    I2C: I2c,
+    I2C: WriteRead<SevenBitAddress>
 {
     pub fn new(i2c: I2C) -> Self {
         FT6236 {
@@ -136,7 +136,7 @@ where
         Ok(())
     }
 
-    pub fn reset<P: OutputPin, D: DelayUs>(
+    pub fn reset<P: OutputPin, D: DelayMs<u32>>(
         &mut self,
         rst: &mut P,
         delay: &mut D,
@@ -220,7 +220,8 @@ where
     }
 
     fn write_reg(&mut self, reg_addr: u8, value: u8) -> Result<(), I2C::Error> {
-        self.i2c.write(self.addr, &[reg_addr, value])?;
+        let mut buf = [];
+        self.i2c.write_read(self.addr, &[reg_addr, value], &mut buf)?;
 
         Ok(())
     }
